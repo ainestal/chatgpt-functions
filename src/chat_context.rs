@@ -2,21 +2,7 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Message {
-    pub role: String,
-    pub content: String,
-}
-
-impl fmt::Display for Message {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{{ \"role\": {}, \"content\": {} }}",
-            self.role, self.content
-        )
-    }
-}
+use crate::message::Message;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ChatContext {
@@ -37,13 +23,23 @@ impl ChatContext {
     }
 }
 
+// Print valid JSON for ChatContext, no commas if last field
 impl fmt::Display for ChatContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{ \"model\": {}, \"messages\": [", self.model)?;
-        for message in self.messages.iter() {
-            write!(f, "{}, ", message)?;
+        write!(f, "{{\"model\":{},\"messages\":[", self.model)?;
+        for (i, message) in self.messages.iter().enumerate() {
+            write!(
+                f,
+                "{}{}",
+                message,
+                if i == self.messages.len() - 1 {
+                    ""
+                } else {
+                    ","
+                }
+            )?;
         }
-        write!(f, "] }}")
+        write!(f, "]}}")
     }
 }
 
@@ -52,31 +48,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_display_message() {
-        let message = Message {
-            role: "user".to_string(),
-            content: "Hello".to_string(),
-        };
-        assert_eq!(
-            message.to_string(),
-            "{ \"role\": user, \"content\": Hello }"
-        );
-    }
-
-    #[test]
     fn test_display_chat_context() {
         let mut chat_context = ChatContext::new("weather".to_string());
         chat_context.push(Message {
             role: "user".to_string(),
-            content: "Hello".to_string(),
+            content: Some("Hello".to_string()),
+            name: None,
+            function_call: None,
         });
         chat_context.push(Message {
             role: "bot".to_string(),
-            content: "Hi".to_string(),
+            content: Some("Hi".to_string()),
+            name: None,
+            function_call: None,
         });
         assert_eq!(
             chat_context.to_string(),
-            "{ \"model\": weather, \"messages\": [{ \"role\": user, \"content\": Hello }, { \"role\": bot, \"content\": Hi }, ] }"
+            "{\"model\":weather,\"messages\":[{\"role\":user,\"content\":Hello},{\"role\":bot,\"content\":Hi}]}"
         );
     }
 }

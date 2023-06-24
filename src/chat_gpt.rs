@@ -1,32 +1,8 @@
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
 
-use crate::chat_context::{ChatContext, Message};
+use crate::{chat_context::ChatContext, chat_response::ChatResponse};
 
 const URL: &str = "https://api.openai.com/v1/chat/completions";
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Choice {
-    index: u64,
-    message: Message,
-    finish_reason: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Usage {
-    prompt_tokens: u32,
-    completion_tokens: u32,
-    total_tokens: u32,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ChatResponse {
-    id: String,
-    object: String,
-    created: u64,
-    pub choices: Vec<Choice>,
-    usage: Usage,
-}
 
 pub struct ChatGPT {
     client: reqwest::Client,
@@ -44,7 +20,7 @@ impl ChatGPT {
         })
     }
 
-    pub async fn completion(&mut self, chat_context: &ChatContext) -> Result<Message> {
+    pub async fn completion(&mut self, chat_context: &ChatContext) -> Result<ChatResponse> {
         let response = self
             .client
             .post(URL)
@@ -59,6 +35,6 @@ impl ChatGPT {
             .context("Failed to retrieve the content of the response")?;
 
         let answer: ChatResponse = serde_json::from_str(&response)?;
-        Ok(answer.choices[0].message.clone())
+        Ok(answer)
     }
 }

@@ -2,8 +2,9 @@ use anyhow::{Context, Result};
 use dotenv::dotenv;
 use uuid::Uuid;
 
-use chatgpt_functions::chat_context::{ChatContext, Message};
+use chatgpt_functions::chat_context::ChatContext;
 use chatgpt_functions::chat_gpt::ChatGPT;
+use chatgpt_functions::message::Message;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -30,7 +31,9 @@ async fn main() -> Result<()> {
 
         chat_context.push(Message {
             role: "user".to_string(),
-            content: input.clone(),
+            content: Some(input),
+            name: None,
+            function_call: None,
         });
 
         println!("- AI:");
@@ -39,7 +42,7 @@ async fn main() -> Result<()> {
             .await
             .context("Could not get an answer from GPT")?;
 
-        println!("{}", format!("{}", answer.content));
+        println!("{}", format!("{}", answer.to_string()));
         println!("--------------------------------------");
     }
 }
