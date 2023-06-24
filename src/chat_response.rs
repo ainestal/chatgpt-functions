@@ -1,5 +1,5 @@
-use std::fmt;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 use crate::message::Message;
 
@@ -28,26 +28,40 @@ pub struct ChatResponse {
 
 impl fmt::Display for Choice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{\"index\":{},\"message\":{},\"finish_reason\":{}}}", self.index, self.message, self.finish_reason)
+        write!(
+            f,
+            "{{\"index\":{},\"message\":{},\"finish_reason\":{}}}",
+            self.index, self.message, self.finish_reason
+        )
     }
 }
 
 impl fmt::Display for ChatResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{\"id\":{},\"object\":{},\"created\":{},\"choices\":[", self.id, self.object, self.created)?;
+        write!(
+            f,
+            "{{\"id\":{},\"object\":{},\"created\":{},\"choices\":[",
+            self.id, self.object, self.created
+        )?;
         for (i, choice) in self.choices.iter().enumerate() {
             write!(
                 f,
                 "{}{}",
                 choice,
-                if i == self.choices.len() - 1 {
-                    ""
-                } else {
-                    ","
-                }
+                if i == self.choices.len() - 1 { "" } else { "," }
             )?;
         }
-        write!(f, "]}}")
+        write!(f, "],\"usage\":{}}}", self.usage)
+    }
+}
+
+impl fmt::Display for Usage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{{\"prompt_tokens\":{},\"completion_tokens\":{},\"total_tokens\":{}}}",
+            self.prompt_tokens, self.completion_tokens, self.total_tokens
+        )
     }
 }
 
@@ -104,7 +118,20 @@ mod tests {
         };
         assert_eq!(
             format!("{}", chat_response),
-            "{\"id\":id,\"object\":object,\"created\":0,\"choices\":[{\"index\":0,\"message\":{\"role\":role,\"content\":content,\"name\":name,\"function_call\":{\"name\":name,\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":finish_reason}]}"
+            "{\"id\":id,\"object\":object,\"created\":0,\"choices\":[{\"index\":0,\"message\":{\"role\":role,\"content\":content,\"name\":name,\"function_call\":{\"name\":name,\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":finish_reason}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}"
+        );
+    }
+
+    #[test]
+    fn test_display_usage() {
+        let usage = Usage {
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0,
+        };
+        assert_eq!(
+            format!("{}", usage),
+            "{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}"
         );
     }
 }

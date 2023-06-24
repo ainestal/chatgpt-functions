@@ -41,8 +41,7 @@ async fn main() -> Result<()> {
             .completion(&chat_context)
             .await
             .context("Could not get an answer from GPT")?;
-
-        println!("{}", format!("{}", answer.to_string()));
+        println!("{}", answer.to_string());
         println!("--------------------------------------");
     }
 }
