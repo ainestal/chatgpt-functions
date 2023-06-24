@@ -19,12 +19,12 @@ pub struct FunctionCall {
 // Print valid JSON for Message, no commas if last field
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{\"role\":{}", self.role)?;
+        write!(f, "{{\"role\":\"{}\"", self.role)?;
         if let Some(content) = &self.content {
-            write!(f, ",\"content\":{}", content)?;
+            write!(f, ",\"content\":\"{}\"", content)?;
         }
         if let Some(name) = &self.name {
-            write!(f, ",\"name\":{}", name)?;
+            write!(f, ",\"name\":\"{}\"", name)?;
         }
         if let Some(function_call) = &self.function_call {
             write!(f, ",\"function_call\":{}", function_call)?;
@@ -38,7 +38,7 @@ impl fmt::Display for FunctionCall {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{\"name\":{},\"arguments\":{}}}",
+            "{{\"name\":\"{}\",\"arguments\":{}}}",
             self.name, self.arguments
         )
     }
@@ -61,7 +61,7 @@ mod tests {
         };
         assert_eq!(
             message.to_string(),
-            "{\"role\":role,\"content\":content,\"name\":name,\"function_call\":{\"name\":name,\"arguments\":{\"example\":\"this\"}}}".to_string()
+            "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}}".to_string()
         );
     }
 }

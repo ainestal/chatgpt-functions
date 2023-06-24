@@ -26,7 +26,8 @@ impl ChatGPT {
             .post(URL)
             .bearer_auth(&self.openai_api_token)
             .header("Content-Type", "application/json")
-            .json(&chat_context)
+            // Use Display trait to avoid sending None fields that the API would reject
+            .body(chat_context.to_string())
             .send()
             .await
             .context(format!("Failed to receive the response from {}", URL))?

@@ -6,7 +6,7 @@ use crate::message::Message;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Choice {
     index: u64,
-    message: Message,
+    pub message: Message,
     finish_reason: String,
 }
 
@@ -30,7 +30,7 @@ impl fmt::Display for Choice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{\"index\":{},\"message\":{},\"finish_reason\":{}}}",
+            "{{\"index\":{},\"message\":{},\"finish_reason\":\"{}\"}}",
             self.index, self.message, self.finish_reason
         )
     }
@@ -40,7 +40,7 @@ impl fmt::Display for ChatResponse {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{\"id\":{},\"object\":{},\"created\":{},\"choices\":[",
+            "{{\"id\":\"{}\",\"object\":\"{}\",\"created\":{},\"choices\":[",
             self.id, self.object, self.created
         )?;
         for (i, choice) in self.choices.iter().enumerate() {
@@ -87,7 +87,7 @@ mod tests {
         };
         assert_eq!(
             format!("{}", choice),
-            "{\"index\":0,\"message\":{\"role\":role,\"content\":content,\"name\":name,\"function_call\":{\"name\":name,\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":finish_reason}"
+            "{\"index\":0,\"message\":{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":\"finish_reason\"}"
         );
     }
 
@@ -118,7 +118,7 @@ mod tests {
         };
         assert_eq!(
             format!("{}", chat_response),
-            "{\"id\":id,\"object\":object,\"created\":0,\"choices\":[{\"index\":0,\"message\":{\"role\":role,\"content\":content,\"name\":name,\"function_call\":{\"name\":name,\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":finish_reason}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}"
+            "{\"id\":\"id\",\"object\":\"object\",\"created\":0,\"choices\":[{\"index\":0,\"message\":{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":\"finish_reason\"}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}"
         );
     }
 

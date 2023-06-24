@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use anyhow::{Context, Result};
+use chatgpt_functions::function_specification::{FunctionSpecification, Parameters, Property};
 use dotenv::dotenv;
 use uuid::Uuid;
 
@@ -15,8 +18,32 @@ async fn main() -> Result<()> {
 
     let mut gpt = ChatGPT::new(key, session_id.clone())?;
     let mut chat_context = ChatContext::new(model.clone());
+    let mut properties = HashMap::new();
+    properties.insert(
+        "location".to_string(),
+        Property {
+            type_: "string".to_string(),
+            description: Some("The city and state, e.g. San Francisco, CA".to_string()),
+            enum_: None,
+        },
+    );
 
-    println!("Initialised GPT-4 chatbot. Enter your message to start a conversation.");
+    let functions = FunctionSpecification {
+        name: "get_current_weather".to_string(),
+        description: "Get the current weather in a given location".to_string(),
+        parameters: Parameters {
+            type_: "object".to_string(),
+            properties: properties,
+            required: vec!["location".to_string()],
+        },
+    };
+
+    chat_context.set_functions(functions);
+
+    println!(
+        "Initialised {} chatbot. Enter your message to start a conversation.",
+        chat_context.model
+    );
     println!("Using:");
     println!("- Model: {}", chat_context.model);
     println!("- Session ID: {}", gpt.session_id);
@@ -38,12 +65,12 @@ async fn main() -> Result<()> {
         });
 
         println!("- AI:");
-        // println!("Request: {}", chat_context);
+        println!("Request: {}", chat_context);
         let answer = gpt
             .completion(&chat_context)
             .await
             .context("Could not get an answer from GPT")?;
-        // println!("Full answer: {}", answer.to_string());
+        println!("Full answer: {}", answer.to_string());
         print_answer(&answer);
         println!("--------------------------------------");
     }
