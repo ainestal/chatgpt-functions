@@ -10,7 +10,7 @@ async fn main() -> Result<()> {
 
     let mut gpt = ChatGPT::new(key, None, None)?;
 
-    println!("Initialised GPT-4 chatbot. Enter your message to start a conversation.");
+    println!("Initialised chatbot. Enter your message to start a conversation.");
     println!("Using:");
     println!("- Model: {}", gpt.chat_context.model);
     println!("- Session ID: {}", gpt.session_id);

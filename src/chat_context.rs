@@ -26,8 +26,16 @@ impl ChatContext {
         self.messages.push(message);
     }
 
-    pub fn set_functions(&mut self, functions: FunctionSpecification) {
+    pub fn set_messages(&mut self, messages: Vec<Message>) {
+        self.messages = messages;
+    }
+
+    pub fn push_function(&mut self, functions: FunctionSpecification) {
         self.functions.push(functions);
+    }
+
+    pub fn set_functions(&mut self, functions: Vec<FunctionSpecification>) {
+        self.functions = functions;
     }
 
     pub fn set_function_call(&mut self, function_call: String) {
@@ -110,16 +118,16 @@ mod tests {
                 enum_: None,
             },
         );
-        let functions = FunctionSpecification {
+        let function = FunctionSpecification {
             name: "test_function".to_string(),
-            description: "a dummy function to test the chat context".to_string(),
-            parameters: Parameters {
+            description: Some("a dummy function to test the chat context".to_string()),
+            parameters: Some(Parameters {
                 type_: "object".to_string(),
                 properties,
                 required: vec!["location".to_string()],
-            },
+            }),
         };
-        chat_context.set_functions(functions);
+        chat_context.push_function(function);
 
         // Add a message to the chat context
         chat_context.push_message(Message {

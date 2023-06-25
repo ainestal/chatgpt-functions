@@ -2,17 +2,17 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FunctionSpecification {
     pub name: String,
-    pub description: String,
-    pub parameters: Parameters,
+    pub description: Option<String>,
+    pub parameters: Option<Parameters>,
 }
 
 // Struct to deserialize parameters using serde
 // the type_ field is named type because type is a reserved keyword in Rust
 // the anotation will help serde to deserialize the field correctly
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Parameters {
     #[serde(rename = "type")]
     pub type_: String,
@@ -20,7 +20,7 @@ pub struct Parameters {
     pub required: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Property {
     #[serde(rename = "type")]
     pub type_: String,
@@ -29,13 +29,35 @@ pub struct Property {
     pub enum_: Option<Vec<String>>,
 }
 
+impl FunctionSpecification {
+    pub fn new(
+        name: String,
+        description: Option<String>,
+        parameters: Option<Parameters>,
+    ) -> FunctionSpecification {
+        FunctionSpecification {
+            name,
+            description,
+            parameters,
+        }
+    }
+}
+
+// ------------------------------------------------------------------------------
+// Display functions
+// ------------------------------------------------------------------------------
+
+// Print valid JSON for FunctionSpecification, no commas if last field, no field if None
 impl fmt::Display for FunctionSpecification {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{{\"name\":\"{}\",\"description\":\"{}\",\"parameters\":{}}}",
-            self.name, self.description, self.parameters
-        )
+        write!(f, "{{\"name\":\"{}\"", self.name)?;
+        if let Some(description) = &self.description {
+            write!(f, ",\"description\":\"{}\"", description)?;
+        }
+        if let Some(parameters) = &self.parameters {
+            write!(f, ",\"parameters\":{}", parameters)?;
+        }
+        write!(f, "}}")
     }
 }
 
@@ -86,9 +108,31 @@ impl fmt::Display for Property {
     }
 }
 
+// ------------------------------------------------------------------------------
+// Tests
+// ------------------------------------------------------------------------------
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_function_specification_new() {
+        let name = "get_current_weather".to_string();
+        let description = "Get the current weather in a given location".to_string();
+        let parameters = Parameters {
+            type_: "object".to_string(),
+            properties: HashMap::new(),
+            required: vec![],
+        };
+        let function_specification = FunctionSpecification::new(
+            name.clone(),
+            Some(description.clone()),
+            Some(parameters.clone()),
+        );
+        assert_eq!(function_specification.name, name);
+        assert_eq!(function_specification.description, Some(description));
+        assert_eq!(function_specification.parameters, Some(parameters));
+    }
 
     #[test]
     fn test_deserialize_function_specification() {
@@ -117,14 +161,14 @@ mod tests {
         assert_eq!(function_specification.name, "get_current_weather");
         assert_eq!(
             function_specification.description,
-            "Get the current weather in a given location"
+            Some("Get the current weather in a given location".to_string())
         );
-        assert_eq!(function_specification.parameters.type_, "object");
-        assert_eq!(function_specification.parameters.properties.len(), 2);
-        assert_eq!(function_specification.parameters.required.len(), 1);
+        let params = function_specification.parameters.unwrap();
+        assert_eq!(params.type_, "object");
+        assert_eq!(params.properties.len(), 2);
+        assert_eq!(params.required.len(), 1);
 
-        let location = function_specification
-            .parameters
+        let location = params
             .properties
             .get("location")
             .expect("Could not find location property");
@@ -134,8 +178,7 @@ mod tests {
             Some("The city and state, e.g. San Francisco, CA".to_string())
         );
 
-        let unit = function_specification
-            .parameters
+        let unit = params
             .properties
             .get("unit")
             .expect("Could not find unit property");
@@ -239,8 +282,8 @@ mod tests {
         };
         let function_specification = FunctionSpecification {
             name: "get_current_weather".to_string(),
-            description: "Get the current weather in a given location".to_string(),
-            parameters,
+            description: Some("Get the current weather in a given location".to_string()),
+            parameters: Some(parameters),
         };
         assert_eq!(
             function_specification.to_string(),

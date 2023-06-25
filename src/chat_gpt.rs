@@ -1,7 +1,10 @@
 use anyhow::{Context, Result};
 use uuid::Uuid;
 
-use crate::{chat_context::ChatContext, chat_response::ChatResponse, message::Message};
+use crate::{
+    chat_context::ChatContext, chat_response::ChatResponse,
+    function_specification::FunctionSpecification, message::Message,
+};
 
 const DEFAULT_MODEL: &str = "gpt-3.5-turbo-0613";
 const URL: &str = "https://api.openai.com/v1/chat/completions";
@@ -108,10 +111,26 @@ impl ChatGPT {
     pub fn push_message(&mut self, message: Message) {
         self.chat_context.push_message(message);
     }
+
+    pub fn set_messages(&mut self, messages: Vec<Message>) {
+        self.chat_context.set_messages(messages);
+    }
+
+    pub fn push_function(&mut self, function: FunctionSpecification) {
+        self.chat_context.push_function(function);
+    }
+
+    pub fn set_functions(&mut self, functions: Vec<FunctionSpecification>) {
+        self.chat_context.set_functions(functions);
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
+    use crate::function_specification::Parameters;
+
     use super::*;
 
     #[test]
@@ -147,5 +166,59 @@ mod tests {
         .unwrap();
         assert_eq!(chat_gpt.session_id, session_id);
         assert_eq!(chat_gpt.chat_context.model, "model");
+    }
+
+    #[test]
+    fn test_chat_gpt_push_message() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let message = Message::new_user_message("content".to_string());
+        chat_gpt.push_message(message);
+        assert_eq!(chat_gpt.chat_context.messages.len(), 1);
+    }
+
+    #[test]
+    fn test_chat_gpt_set_message() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let message = Message::new_user_message("content".to_string());
+        chat_gpt.set_messages(vec![message]);
+        assert_eq!(chat_gpt.chat_context.messages.len(), 1);
+    }
+
+    #[test]
+    fn test_chat_gpt_push_function() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let function = FunctionSpecification::new("function".to_string(), None, None);
+        chat_gpt.push_function(function);
+        assert_eq!(chat_gpt.chat_context.functions.len(), 1);
+    }
+
+    #[test]
+    fn test_chat_gpt_set_function() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let function = FunctionSpecification::new(
+            "function".to_string(),
+            Some("Test function".to_string()),
+            Some(Parameters {
+                type_: "string".to_string(),
+                properties: HashMap::new(),
+                required: vec![],
+            }),
+        );
+        chat_gpt.set_functions(vec![function]);
+        assert_eq!(chat_gpt.chat_context.functions.len(), 1);
+
+        let function = chat_gpt.chat_context.functions.get(0).unwrap();
+        assert_eq!(function.name, "function");
+        assert_eq!(function.description.as_ref().unwrap(), "Test function");
+        assert_eq!(function.parameters.as_ref().unwrap().type_, "string");
+    }
+
+    #[tokio::test]
+    async fn test_chat_gpt_completion() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let message = Message::new_user_message("content".to_string());
+        chat_gpt.push_message(message);
+        let response = chat_gpt.completion().await.unwrap();
+        assert_eq!(response.choices.len(), 1);
     }
 }
