@@ -16,6 +16,38 @@ pub struct FunctionCall {
     pub arguments: String,
 }
 
+impl Message {
+    pub fn new(role: String) -> Message {
+        Message {
+            role,
+            content: None,
+            name: None,
+            function_call: None,
+        }
+    }
+
+    pub fn new_user_message(content: String) -> Message {
+        Message {
+            role: "user".to_string(),
+            content: Some(content),
+            name: None,
+            function_call: None,
+        }
+    }
+
+    pub fn set_content(&mut self, content: String) {
+        self.content = Some(content);
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.name = Some(name);
+    }
+
+    pub fn set_function_call(&mut self, function_call: FunctionCall) {
+        self.function_call = Some(function_call);
+    }
+}
+
 // Print valid JSON for Message, no commas if last field
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -50,18 +82,65 @@ mod tests {
 
     #[test]
     fn test_display_message() {
-        let message = Message {
-            role: "role".to_string(),
-            content: Some("content".to_string()),
-            name: Some("name".to_string()),
-            function_call: Some(FunctionCall {
-                name: "name".to_string(),
-                arguments: "{\"example\":\"this\"}".to_string(),
-            }),
+        let mut message = Message::new("role".to_string());
+        assert_eq!(message.to_string(), "{\"role\":\"role\"}".to_string());
+
+        message.set_content("content".to_string());
+        assert_eq!(
+            message.to_string(),
+            "{\"role\":\"role\",\"content\":\"content\"}".to_string()
+        );
+
+        message.set_name("name".to_string());
+        assert_eq!(
+            message.to_string(),
+            "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\"}".to_string()
+        );
+
+        let function_call = FunctionCall {
+            name: "name".to_string(),
+            arguments: "{\"example\":\"this\"}".to_string(),
         };
+        message.set_function_call(function_call);
         assert_eq!(
             message.to_string(),
             "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}}".to_string()
+        );
+    }
+
+    #[test]
+    fn test_display_function_call_no_name() {
+        let function_call = FunctionCall {
+            name: "".to_string(),
+            arguments: "{\"example\":\"this\"}".to_string(),
+        };
+        assert_eq!(
+            function_call.to_string(),
+            "{\"name\":\"\",\"arguments\":{\"example\":\"this\"}}".to_string()
+        );
+    }
+
+    #[test]
+    fn test_display_function_call_no_arguments() {
+        let function_call = FunctionCall {
+            name: "name".to_string(),
+            arguments: "{}".to_string(),
+        };
+        assert_eq!(
+            function_call.to_string(),
+            "{\"name\":\"name\",\"arguments\":{}}".to_string()
+        );
+    }
+
+    #[test]
+    fn test_display_function_call() {
+        let function_call = FunctionCall {
+            name: "name".to_string(),
+            arguments: "{\"example\":\"this\"}".to_string(),
+        };
+        assert_eq!(
+            function_call.to_string(),
+            "{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}".to_string()
         );
     }
 }
