@@ -8,10 +8,26 @@ This is a work in progress. The API is not stable and will change.
 
 # Requirements
 
-- Rust 1.26.0 or higher
-- OpenAI API key
+- Rust 1.70.0 or higher
+- OpenAI API key. To get one:
+  - Go to https://openai.com/
+  - Sign up
+  - Go to https://platform.openai.com/account/api-keys
+  - Create a new API key
+  - Copy the key and store it in a safe place
 
 # Usage
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+chatgpt-functions = "0.1.0"
+```
+
+# Examples
+
+You can find examples in the `examples` folder.
 
 ## Example without functions
 
@@ -55,12 +71,10 @@ async fn main() -> Result<()> {
 ## Example with functions
 
 ```rust
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use chatgpt_functions::{
     chat_gpt::ChatGPT,
-    function_specification::{FunctionSpecification, Parameters, Property},
+    function_specification::{FunctionSpecification},
 };
 use dotenv::dotenv;
 
@@ -71,24 +85,28 @@ async fn main() -> Result<()> {
 
     let mut gpt = ChatGPT::new(key, None, None)?;
 
-    let mut properties = HashMap::new();
-    properties.insert(
-        "location".to_string(),
-        Property {
-            type_: "string".to_string(),
-            description: Some("The city and state, e.g. San Francisco, CA".to_string()),
-            enum_: None,
-        },
-    );
-    let function = FunctionSpecification {
-        name: "get_current_weather".to_string(),
-        description: Some("Get the current weather in a given location".to_string()),
-        parameters: Some(Parameters {
-            type_: "object".to_string(),
-            properties: properties,
-            required: vec!["location".to_string()],
-        }),
-    };
+    let json = r#"
+        {
+            "name": "get_current_weather",
+            "description": "Get the current weather in a given location",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "The city and state, e.g. San Francisco, CA"
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": ["celsius", "fahrenheit"]
+                    }
+                },
+                "required": ["location"]
+            }
+        }
+        "#;
+    let function: FunctionSpecification =
+        serde_json::from_str(json).expect("Could not parse correctly the function specification");
 
     gpt.push_function(function);
 
