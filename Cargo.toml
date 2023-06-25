@@ -1,9 +1,9 @@
 [package]
 name = "chatgpt-functions"
-categories = ["ai", "chatbot", "openai", "gpt-3", "gpt-4", "chatgpt", "functions"]
+categories = ["ai", "chatbot", "openai", "gpt-3", "gpt-4", "chatgpt"]
 description = "This crate provides a wrapper around the OpenAI API to use GPT-3.5 and GPT-4 for chatbots. It also provides a way to define functions that can be called from the chatbot."
 edition = "2021"
-keywords = ["chatbot", "openai", "gpt-3", "gpt-4", "chatgpt", "functions"]
+keywords = ["chatbot", "openai", "gpt-3", "gpt-4", "chatgpt"]
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/ainestal/chatgpt-functions"
