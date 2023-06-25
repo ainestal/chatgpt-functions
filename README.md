@@ -1,6 +1,6 @@
 # chatgpt-functions
 
-Library to interact with gpt in chat mode, using functions.
+This crate provides a wrapper around the OpenAI API to use GPT-3.5 and GPT-4 for chatbots. It also provides a way to define functions that can be called from the chatbot.
 
 ## Disclaimer
 

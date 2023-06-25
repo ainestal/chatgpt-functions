@@ -1,13 +1,28 @@
 [package]
 name = "chatgpt-functions"
-version = "0.1.0"
+categories = ["ai", "chatbot", "openai", "gpt-3", "gpt-4", "chatgpt", "functions"]
+description = "This crate provides a wrapper around the OpenAI API to use GPT-3.5 and GPT-4 for chatbots. It also provides a way to define functions that can be called from the chatbot."
 edition = "2021"
+keywords = ["chatbot", "openai", "gpt-3", "gpt-4", "chatgpt", "functions"]
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/ainestal/chatgpt-functions"
+version = "0.1.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[example]]
 name = "talk"
 path = "examples/talk.rs"
+
+[[example]]
+name = "talk_with_functions"
+path = "examples/talk_with_functions.rs"
+
+[[example]]
+name = "talk_with_functions_json"
+path = "examples/talk_with_functions_json.rs"
+
 
 [dependencies]
 anyhow = "1"
