@@ -1,8 +1,58 @@
 # chatgpt-functions
 
-Lib to interact with gpt in chat mode, using functions
+Library to interact with gpt in chat mode, using functions.
 
-## Example
+## Disclaimer
+
+This is a work in progress. The API is not stable and will change.
+
+# Requirements
+
+- Rust 1.26.0 or higher
+- OpenAI API key
+
+# Usage
+
+## Example without functions
+
+```rust
+use anyhow::{Context, Result};
+use dotenv::dotenv;
+
+use chatgpt_functions::chat_gpt::ChatGPT;
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    dotenv().ok();
+    let key = std::env::var("OPENAI_API_KEY")?;
+
+    let mut gpt = ChatGPT::new(key, None, None)?;
+
+    println!("Initialised chatbot. Enter your message to start a conversation.");
+    println!("Using:");
+    println!("- Model: {}", gpt.chat_context.model);
+    println!("- Session ID: {}", gpt.session_id);
+    println!("You can quit by pressing Ctrl+C (linux), or Cmd+C (Mac).");
+    println!("--------------------------------------");
+    loop {
+        println!("- Enter your message and press Enter:");
+        let mut input = String::new();
+        std::io::stdin()
+            .read_line(&mut input)
+            .context("Failed to read your input")?;
+        input.pop(); // Remove the trailing newline
+
+        println!("- AI:");
+        // println!("Request: {}", chat_context);
+        let answer = gpt.completion_with_user_content(input).await?;
+        // println!("Full answer: {}", answer.to_string());
+        println!("{}", choice.message.content);
+        println!("--------------------------------------");
+    }
+}
+```
+
+## Example in bash of an interaction with GPT
 
 ```bash
 curl https://api.openai.com/v1/chat/completions   -H "Content-Type: application/json"   -H "Authorization: Bearer $OPENAI_API_KEY"   -d '{
@@ -54,3 +104,7 @@ curl https://api.openai.com/v1/chat/completions   -H "Content-Type: application/
   }
 }
 ```
+
+# Contributing
+
+Contributions are welcome! Please open an issue or a pull request.
