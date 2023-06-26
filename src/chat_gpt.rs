@@ -97,6 +97,7 @@ impl ChatGPT {
     }
 
     /// Calls the OpenAI API to get a response using the current context, adding the content provided by the user
+    /// This is the preferred function to use for chat completions that work with context.
     ///
     /// This is a fully managed function, it does update the context with the message provided,
     /// and it does update the context with the response from the AI.
