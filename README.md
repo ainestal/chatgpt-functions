@@ -69,7 +69,7 @@ async fn main() -> Result<()> {
 
         println!("- AI:");
         // println!("Request: {}", chat_context);
-        let answer = gpt.completion_with_user_content(input).await?;
+        let answer = gpt.completion_managed(input).await?;
         // println!("Full answer: {}", answer.to_string());
         println!("{}", answer.choices[0].message);
         println!("--------------------------------------");
@@ -135,7 +135,7 @@ async fn main() -> Result<()> {
 
         println!("- AI:");
         // println!("Request: {}", chat_context);
-        let answer = gpt.completion_with_user_content(input).await?;
+        let answer = gpt.completion_managed(input).await?;
         println!("Full answer: {}", answer.to_string());
         println!("--------------------------------------");
     }
