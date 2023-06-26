@@ -25,6 +25,15 @@ Add the following to your `Cargo.toml`:
 chatgpt-functions = "0.1.0"
 ```
 
+# Documentation
+
+The library is divided in two parts:
+
+- `chat_gpt` contains most of the functions that will be needed in a normal usage:
+  - `ChatGPT` is the main struct that contains the context of the chatbot
+  - `completions` are the functions that interact with the OpenAI API, storing or not in the context as preferred by the programmer.
+- The rest of the files contain internal structures and functions that give full flexibility while interacting with the model and the context. But they are not needed for a normal usage. They are public so they can be used if needed.
+
 # Examples
 
 You can find examples in the `examples` folder.
