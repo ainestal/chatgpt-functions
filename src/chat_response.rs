@@ -3,11 +3,11 @@ use std::fmt;
 
 use crate::message::Message;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Choice {
     index: u64,
     pub message: Message,
-    finish_reason: String,
+    pub finish_reason: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,7 +87,7 @@ mod tests {
         };
         assert_eq!(
             format!("{}", choice),
-            "{\"index\":0,\"message\":{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":\"finish_reason\"}"
+            "{\"index\":0,\"message\":{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}},\"finish_reason\":\"finish_reason\"}"
         );
     }
 
@@ -118,7 +118,7 @@ mod tests {
         };
         assert_eq!(
             format!("{}", chat_response),
-            "{\"id\":\"id\",\"object\":\"object\",\"created\":0,\"choices\":[{\"index\":0,\"message\":{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}},\"finish_reason\":\"finish_reason\"}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}"
+            "{\"id\":\"id\",\"object\":\"object\",\"created\":0,\"choices\":[{\"index\":0,\"message\":{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}},\"finish_reason\":\"finish_reason\"}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0}}"
         );
     }
 

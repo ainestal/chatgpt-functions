@@ -92,7 +92,7 @@ impl ChatGPT {
             .await
             .context("Failed to retrieve the content of the response")?;
 
-        let answer: ChatResponse = serde_json::from_str(&response)?;
+        let answer = parse_removing_newlines(response)?;
         Ok(answer)
     }
 
@@ -189,6 +189,12 @@ impl ChatGPT {
     /// It returns an error if the API token is not valid
     /// It returns an error if the response from the API is not valid or if the content of the response is not valid
     /// # Remarks
+    /// Important: The message received from the AI has to be modified when it is a function
+    /// This is because when a function is returned the model still says that it is an assistant message.
+    /// This is a bug in the API.
+    /// If this is inserted in the context, the next request to the API will fail since it won't conform with the rules of the model.
+    /// https://platform.openai.com/docs/api-reference/chat/create#chat/create-messages
+    ///
     /// The context is updated with the response from the AI
     /// This function is used by the other functions of the library
     /// It assumes that there will only be one choice in the response
@@ -244,6 +250,12 @@ impl ChatGPT {
     pub fn set_functions(&mut self, functions: Vec<FunctionSpecification>) {
         self.chat_context.set_functions(functions);
     }
+}
+
+fn parse_removing_newlines(response: String) -> Result<ChatResponse> {
+    let r = response.replace("\n", "");
+    let response: ChatResponse = serde_json::from_str(&r)?;
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -332,6 +344,73 @@ mod tests {
         assert_eq!(function.name, "function");
         assert_eq!(function.description.as_ref().unwrap(), "Test function");
         assert_eq!(function.parameters.as_ref().unwrap().type_, "string");
+    }
+
+    #[test]
+    fn test_parse_removing_newlines() {
+        use crate::message::FunctionCall;
+
+        let r = r#"{
+    "id": "chatcmpl-7Ut7jsNlTUO9k9L5kBF0uDAyG19pK",
+    "object": "chat.completion",
+    "created": 1687596091,
+    "model": "gpt-3.5-turbo-0613",
+    "choices": [
+        {
+        "index": 0,
+        "message": {
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "get_current_weather",
+                "arguments": "{\n  \"location\": \"Madrid, Spain\"\n}"
+            }
+        },
+        "finish_reason": "function_call"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 90,
+        "completion_tokens": 19,
+        "total_tokens": 109
+    }
+}"#
+        .to_string();
+        let response = parse_removing_newlines(r).unwrap();
+        let message = response.choices.get(0).unwrap().message.clone();
+
+        assert_eq!(message.role, "assistant");
+        assert_eq!(message.content, None);
+        assert_eq!(message.name, None);
+        assert_eq!(
+            message.function_call,
+            Some(FunctionCall {
+                name: "get_current_weather".to_string(),
+                arguments: "{\n  \"location\": \"Madrid, Spain\"\n}".to_string(),
+            })
+        );
+    }
+
+    #[test]
+    fn test_fix_context_when_function_replied_with_content() {
+        use crate::message::FunctionCall;
+
+        let r = r#"{"id":"chatcmpl-7VneSVRn9qJ1crw3m0V0kmnCq8Pnn","object":"chat.completion","created":1687813384,"choices":[{"index":0,"message":{"role":"assistant","function_call":{"name":"completion_managed","arguments":"{
+    \"content\": \"Hi, model!\"
+}"}},"finish_reason":"function_call"}],"usage":{"prompt_tokens":61,"completion_tokens":18,"total_tokens":79}}"#.to_string();
+        let response = parse_removing_newlines(r).unwrap();
+        let message = response.choices.get(0).unwrap().message.clone();
+
+        assert_eq!(message.role, "assistant");
+        assert_eq!(message.content, None);
+        assert_eq!(message.name, None);
+        assert_eq!(
+            message.function_call,
+            Some(FunctionCall {
+                name: "completion_managed".to_string(),
+                arguments: "{    \"content\": \"Hi, model!\"}".to_string(),
+            })
+        );
     }
 
     // Skip this test because (for now) it requires an API key and a real connection to the API

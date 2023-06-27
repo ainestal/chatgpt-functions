@@ -10,7 +10,7 @@ pub struct Message {
     pub function_call: Option<FunctionCall>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FunctionCall {
     pub name: String,
     pub arguments: String,
@@ -48,12 +48,52 @@ impl Message {
     }
 }
 
-// Print valid JSON for Message, no commas if last field
+/// A message sent by the user or the bot
+///
+/// Print valid JSON for Message, no commas if last field
+/// Arguments are escaped to avoid issues with quotes and newlines
+/// They break the JSON format and the API doesn't handle them well
+///
+/// # Notes
+/// The API asks for content to be present in the message, even when it's an assistant message with a function call
+/// https://platform.openai.com/docs/api-reference/chat/create
+///
+/// # Examples
+///
+/// ```
+/// use chatgpt_functions::message::{FunctionCall, Message};
+///
+/// let mut message = Message::new("role".to_string());
+/// assert_eq!(message.to_string(), "{\"role\":\"role\",\"content\":\"\"}".to_string());
+///
+/// message.set_content("content".to_string());
+/// assert_eq!(
+///    message.to_string(),
+///    "{\"role\":\"role\",\"content\":\"content\"}".to_string()
+/// );
+///
+/// message.set_name("name".to_string());
+/// assert_eq!(
+///    message.to_string(),
+///    "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\"}".to_string()
+/// );
+///
+/// message.set_function_call(FunctionCall {
+///    name: "name".to_string(),
+///    arguments: "arguments".to_string(),
+/// });
+/// assert_eq!(
+///    message.to_string(),
+///    "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"arguments\"}}".to_string()
+/// );
+/// ```
 impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{\"role\":\"{}\"", self.role)?;
         if let Some(content) = &self.content {
             write!(f, ",\"content\":\"{}\"", content)?;
+        } else {
+            write!(f, ",\"content\":\"\"")?;
         }
         if let Some(name) = &self.name {
             write!(f, ",\"name\":\"{}\"", name)?;
@@ -66,12 +106,15 @@ impl fmt::Display for Message {
 }
 
 // Print valid JSON for FunctionCall, no commas if last field
+// Arguments are escaped to avoid issues with quotes and newlines
+// They break the JSON format and the API doesn't handle them well
 impl fmt::Display for FunctionCall {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{{\"name\":\"{}\",\"arguments\":{}}}",
-            self.name, self.arguments
+            "{{\"name\":\"{}\",\"arguments\":\"{}\"}}",
+            self.name,
+            self.arguments.replace("\"", "\\\"").replace("\n", "")
         )
     }
 }
@@ -83,7 +126,10 @@ mod tests {
     #[test]
     fn test_display_message() {
         let mut message = Message::new("role".to_string());
-        assert_eq!(message.to_string(), "{\"role\":\"role\"}".to_string());
+        assert_eq!(
+            message.to_string(),
+            "{\"role\":\"role\",\"content\":\"\"}".to_string()
+        );
 
         message.set_content("content".to_string());
         assert_eq!(
@@ -104,7 +150,7 @@ mod tests {
         message.set_function_call(function_call);
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}}".to_string()
+            "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}}".to_string()
         );
     }
 
@@ -116,7 +162,7 @@ mod tests {
         };
         assert_eq!(
             function_call.to_string(),
-            "{\"name\":\"\",\"arguments\":{\"example\":\"this\"}}".to_string()
+            "{\"name\":\"\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}".to_string()
         );
     }
 
@@ -128,7 +174,7 @@ mod tests {
         };
         assert_eq!(
             function_call.to_string(),
-            "{\"name\":\"name\",\"arguments\":{}}".to_string()
+            "{\"name\":\"name\",\"arguments\":\"{}\"}".to_string()
         );
     }
 
@@ -140,7 +186,42 @@ mod tests {
         };
         assert_eq!(
             function_call.to_string(),
-            "{\"name\":\"name\",\"arguments\":{\"example\":\"this\"}}".to_string()
+            "{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}".to_string()
+        );
+    }
+
+    #[test]
+    fn test_display_message_parsed_from_json_remove_newline() {
+        let message = r#"{
+            "role": "assistant",
+            "content": null,
+            "function_call": {
+                "name": "completion_managed",
+                "arguments": "{\n  \"content\": \"Hi model, how are you today?\"\n}"
+            }
+        }"#
+        .to_string();
+        let message_parsed: Message =
+            serde_json::from_str(&message).expect("JSON was not well-formatted");
+
+        // When we parse the JSON, we remove the newlines
+        assert_eq!(message_parsed.role, "assistant".to_string());
+        assert_eq!(message_parsed.content, None);
+
+        // The API asks for content to be present in the message, even when it's an assistant message with a function call
+        // https://platform.openai.com/docs/api-reference/chat/create
+        assert_eq!(
+            message_parsed.to_string(),
+            "{\"role\":\"assistant\",\"content\":\"\",\"function_call\":{\"name\":\"completion_managed\",\"arguments\":\"{  \\\"content\\\": \\\"Hi model, how are you today?\\\"}\"}}".to_string()
+        );
+
+        // When we don't use our custom Display trait, the newlines are kept
+        assert_eq!(
+            message_parsed.function_call,
+            Some(FunctionCall {
+                name: "completion_managed".to_string(),
+                arguments: "{\n  \"content\": \"Hi model, how are you today?\"\n}".to_string(),
+            })
         );
     }
 }
