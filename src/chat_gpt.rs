@@ -12,6 +12,7 @@ const URL: &str = "https://api.openai.com/v1/chat/completions";
 /// The ChatGPT object
 pub struct ChatGPT {
     client: reqwest::Client,
+    pub model: String,
     openai_api_token: String,
     pub session_id: String,
     pub chat_context: ChatContext,
@@ -33,7 +34,7 @@ impl ChatGPT {
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
     ///     let key = std::env::var("OPENAI_API_KEY")?;
-    ///     let mut gpt = ChatGPT::new(key, None, None)?;
+    ///     let mut gpt = ChatGPT::new(key, None, None, None)?;
     ///     Ok(())
     /// }
     /// ```
@@ -45,6 +46,7 @@ impl ChatGPT {
     /// The API token can be found on the [OpenAI API keys](https://platform.openai.com/account/api-keys)
     pub fn new(
         openai_api_token: String,
+        model: Option<String>,
         chat_context: Option<ChatContext>,
         session_id: Option<String>,
     ) -> Result<ChatGPT> {
@@ -61,6 +63,7 @@ impl ChatGPT {
         };
         Ok(ChatGPT {
             client,
+            model: model.unwrap_or(DEFAULT_MODEL.to_string()),
             openai_api_token,
             session_id,
             chat_context,
@@ -268,22 +271,24 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_new() {
-        let chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
         assert_eq!(chat_gpt.session_id.len(), 36);
         assert_eq!(chat_gpt.chat_context.model, DEFAULT_MODEL);
+        assert_eq!(chat_gpt.model, DEFAULT_MODEL);
     }
 
     #[test]
     fn test_chat_gpt_new_with_session_id() {
         let session_id = "session_id".to_string();
-        let chat_gpt = ChatGPT::new("key".to_string(), None, Some(session_id.clone())).unwrap();
+        let chat_gpt =
+            ChatGPT::new("key".to_string(), None, None, Some(session_id.clone())).unwrap();
         assert_eq!(chat_gpt.session_id, session_id);
     }
 
     #[test]
     fn test_chat_gpt_new_with_chat_context() {
         let chat_context = ChatContext::new("model".to_string());
-        let chat_gpt = ChatGPT::new("key".to_string(), Some(chat_context), None).unwrap();
+        let chat_gpt = ChatGPT::new("key".to_string(), None, Some(chat_context), None).unwrap();
         assert_eq!(chat_gpt.chat_context.model, "model");
     }
 
@@ -293,6 +298,7 @@ mod tests {
         let chat_context = ChatContext::new("model".to_string());
         let chat_gpt = ChatGPT::new(
             "key".to_string(),
+            None,
             Some(chat_context.clone()),
             Some(session_id.clone()),
         )
@@ -303,7 +309,7 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_push_message() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
         let message = Message::new_user_message("content".to_string());
         chat_gpt.push_message(message);
         assert_eq!(chat_gpt.chat_context.messages.len(), 1);
@@ -311,7 +317,7 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_set_message() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
         let message = Message::new_user_message("content".to_string());
         chat_gpt.set_messages(vec![message]);
         assert_eq!(chat_gpt.chat_context.messages.len(), 1);
@@ -319,7 +325,7 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_push_function() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
         let function = FunctionSpecification::new("function".to_string(), None, None);
         chat_gpt.push_function(function);
         assert_eq!(chat_gpt.chat_context.functions.len(), 1);
@@ -327,7 +333,7 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_set_function() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
         let function = FunctionSpecification::new(
             "function".to_string(),
             Some("Test function".to_string()),

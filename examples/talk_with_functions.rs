@@ -12,7 +12,7 @@ async fn main() -> Result<()> {
     dotenv().ok();
     let key = std::env::var("OPENAI_API_KEY")?;
 
-    let mut gpt = ChatGPT::new(key, None, None)?;
+    let mut gpt = ChatGPT::new(key, None, None, None)?;
 
     let mut properties = HashMap::new();
     properties.insert(

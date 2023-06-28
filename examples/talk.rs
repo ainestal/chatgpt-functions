@@ -8,7 +8,7 @@ async fn main() -> Result<()> {
     dotenv().ok();
     let key = std::env::var("OPENAI_API_KEY")?;
 
-    let mut gpt = ChatGPT::new(key, None, None)?;
+    let mut gpt = ChatGPT::new(key, None, None, None)?;
 
     println!("Initialised chatbot. Enter your message to start a conversation.");
     println!("Using:");
