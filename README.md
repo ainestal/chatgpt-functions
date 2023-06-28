@@ -22,7 +22,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chatgpt-functions = "0.1.0"
+chatgpt-functions = "0.2.0"
 ```
 
 # Documentation
