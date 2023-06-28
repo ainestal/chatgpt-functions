@@ -9,6 +9,77 @@ use crate::{
 const DEFAULT_MODEL: &str = "gpt-3.5-turbo-0613";
 const URL: &str = "https://api.openai.com/v1/chat/completions";
 
+// Builder for ChatGPT
+pub struct ChatGPTBuilder {
+    model: Option<String>,
+    openai_api_token: Option<String>,
+    session_id: Option<String>,
+    chat_context: Option<ChatContext>,
+}
+
+impl ChatGPTBuilder {
+    pub fn new() -> Self {
+        ChatGPTBuilder {
+            model: None,
+            openai_api_token: None,
+            session_id: None,
+            chat_context: None,
+        }
+    }
+
+    pub fn model(mut self, model: String) -> Self {
+        self.model = Some(model);
+        self
+    }
+
+    pub fn openai_api_token(mut self, openai_api_token: String) -> Self {
+        self.openai_api_token = Some(openai_api_token);
+        self
+    }
+
+    pub fn session_id(mut self, session_id: String) -> Self {
+        self.session_id = Some(session_id);
+        self
+    }
+
+    pub fn chat_context(mut self, chat_context: ChatContext) -> Self {
+        self.chat_context = Some(chat_context);
+        self
+    }
+
+    pub fn build(self) -> Result<ChatGPT> {
+        let client = reqwest::Client::new();
+        let model = if let Some(m) = self.model {
+            m
+        } else {
+            DEFAULT_MODEL.to_string()
+        };
+        let openai_api_token = self
+            .openai_api_token
+            .context("OpenAI API token is missing")?;
+        let session_id = if let Some(s) = self.session_id {
+            s
+        } else {
+            Uuid::new_v4().to_string()
+        };
+        let chat_context = if let Some(c) = self.chat_context {
+            c
+        } else {
+            let mut c = ChatContext::new(model.clone());
+            c.model = model.clone();
+            c
+        };
+
+        Ok(ChatGPT {
+            client,
+            model,
+            openai_api_token,
+            session_id,
+            chat_context,
+        })
+    }
+}
+
 /// The ChatGPT object
 pub struct ChatGPT {
     client: reqwest::Client,
@@ -28,13 +99,13 @@ impl ChatGPT {
     /// Optional. If not provided, it will generate a new session ID. This will be useful to track the conversation history
     /// # Example
     /// ```
-    /// use chatgpt_functions::chat_gpt::ChatGPT;
+    /// use chatgpt_functions::chat_gpt::ChatGPTBuilder;
     /// use anyhow::Result;
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
     ///     let key = std::env::var("OPENAI_API_KEY")?;
-    ///     let mut gpt = ChatGPT::new(key, None, None, None)?;
+    ///     let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
     ///     Ok(())
     /// }
     /// ```
@@ -45,25 +116,15 @@ impl ChatGPT {
     /// # Remarks
     /// The API token can be found on the [OpenAI API keys](https://platform.openai.com/account/api-keys)
     pub fn new(
+        client: reqwest::Client,
+        model: String,
         openai_api_token: String,
-        model: Option<String>,
-        chat_context: Option<ChatContext>,
-        session_id: Option<String>,
+        session_id: String,
+        chat_context: ChatContext,
     ) -> Result<ChatGPT> {
-        let client = reqwest::Client::new();
-        let session_id = if let Some(session_id) = session_id {
-            session_id
-        } else {
-            Uuid::new_v4().to_string()
-        };
-        let chat_context = if let Some(chat_context) = chat_context {
-            chat_context
-        } else {
-            ChatContext::new(DEFAULT_MODEL.to_string())
-        };
         Ok(ChatGPT {
             client,
-            model: model.unwrap_or(DEFAULT_MODEL.to_string()),
+            model,
             openai_api_token,
             session_id,
             chat_context,
@@ -256,30 +317,12 @@ impl ChatGPT {
 
     /// This function is used to retrieve the content of the last message in the context
     pub fn last_content(&self) -> Option<String> {
-        match self.chat_context.messages.last() {
-            Some(message) => {
-                if let Some(c) = message.clone().content {
-                    return Some(c);
-                } else {
-                    return None;
-                }
-            }
-            None => return None,
-        }
+        self.chat_context.last_content()
     }
 
     /// This function is used to retrieve the function_call of the last message in the context
     pub fn last_function(&self) -> Option<(String, String)> {
-        match self.chat_context.messages.last() {
-            Some(message) => {
-                if let Some(f) = message.clone().function_call {
-                    Some((f.name, f.arguments))
-                } else {
-                    None
-                }
-            }
-            None => None,
-        }
+        self.chat_context.last_function_call()
     }
 }
 
@@ -299,45 +342,34 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_new() {
-        let chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("123".to_string())
+            .build()
+            .unwrap();
         assert_eq!(chat_gpt.session_id.len(), 36);
         assert_eq!(chat_gpt.chat_context.model, DEFAULT_MODEL);
         assert_eq!(chat_gpt.model, DEFAULT_MODEL);
     }
 
     #[test]
-    fn test_chat_gpt_new_with_session_id() {
-        let session_id = "session_id".to_string();
-        let chat_gpt =
-            ChatGPT::new("key".to_string(), None, None, Some(session_id.clone())).unwrap();
-        assert_eq!(chat_gpt.session_id, session_id);
-    }
-
-    #[test]
-    fn test_chat_gpt_new_with_chat_context() {
-        let chat_context = ChatContext::new("model".to_string());
-        let chat_gpt = ChatGPT::new("key".to_string(), None, Some(chat_context), None).unwrap();
-        assert_eq!(chat_gpt.chat_context.model, "model");
-    }
-
-    #[test]
-    fn test_chat_gpt_new_with_session_id_and_chat_context() {
-        let session_id = "session_id".to_string();
-        let chat_context = ChatContext::new("model".to_string());
-        let chat_gpt = ChatGPT::new(
-            "key".to_string(),
-            None,
-            Some(chat_context.clone()),
-            Some(session_id.clone()),
-        )
-        .unwrap();
-        assert_eq!(chat_gpt.session_id, session_id);
+    fn test_chat_gpt_new_with_everything() {
+        let chat_gpt = ChatGPTBuilder::new()
+            .session_id("session_id".to_string())
+            .model("model".to_string())
+            .openai_api_token("1234".to_string())
+            .build()
+            .unwrap();
+        assert_eq!(chat_gpt.session_id, "session_id");
+        assert_eq!(chat_gpt.openai_api_token, "1234");
         assert_eq!(chat_gpt.chat_context.model, "model");
     }
 
     #[test]
     fn test_chat_gpt_push_message() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         let message = Message::new_user_message("content".to_string());
         chat_gpt.push_message(message);
         assert_eq!(chat_gpt.chat_context.messages.len(), 1);
@@ -345,7 +377,10 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_set_message() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         let message = Message::new_user_message("content".to_string());
         chat_gpt.set_messages(vec![message]);
         assert_eq!(chat_gpt.chat_context.messages.len(), 1);
@@ -353,7 +388,10 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_push_function() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         let function = FunctionSpecification::new("function".to_string(), None, None);
         chat_gpt.push_function(function);
         assert_eq!(chat_gpt.chat_context.functions.len(), 1);
@@ -361,7 +399,10 @@ mod tests {
 
     #[test]
     fn test_chat_gpt_set_function() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         let function = FunctionSpecification::new(
             "function".to_string(),
             Some("Test function".to_string()),
@@ -449,7 +490,10 @@ mod tests {
 
     #[test]
     fn test_last_content() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         let message = Message::new_user_message("content".to_string());
         chat_gpt.push_message(message);
         let message = Message::new_user_message("content2".to_string());
@@ -461,13 +505,19 @@ mod tests {
 
     #[test]
     fn test_last_content_empty() {
-        let chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         assert_eq!(chat_gpt.last_content(), None);
     }
 
     #[test]
     fn test_last_function() {
-        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut chat_gpt = ChatGPTBuilder::new()
+            .openai_api_token("key".to_string())
+            .build()
+            .unwrap();
         let mut msg = Message::new("function".to_string());
         msg.set_function_call(FunctionCall {
             name: "function".to_string(),

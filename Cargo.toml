@@ -1,6 +1,6 @@
 [package]
 name = "chatgpt-functions"
-version = "0.2.0"
+version = "0.3.0"
 categories = ["api-bindings"]
 description = "This crate provides a wrapper around the OpenAI API to use GPT-3.5 and GPT-4 for chatbots. It also provides a way to define functions that can be called from the chatbot."
 edition = "2021"

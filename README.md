@@ -22,17 +22,17 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chatgpt-functions = "0.2.0"
+chatgpt-functions = "0.3"
 ```
 
 # Documentation
 
-The library is divided in two parts:
+The documentation is available at https://docs.rs/chatgpt-functions
 
-- `chat_gpt` contains most of the functions that will be needed in a normal usage:
-  - `ChatGPT` is the main struct that contains the context of the chatbot
-  - `completions` are the functions that interact with the OpenAI API, storing or not in the context as preferred by the programmer.
-- The rest of the files contain internal structures and functions that give full flexibility while interacting with the model and the context. But they are not needed for a normal usage. They are public so they can be used if needed.
+# Features
+
+- [x] Chat with GPT-3.5 and GPT-4
+- [x] Define functions that can be called from the chatbot
 
 # Examples
 
@@ -44,14 +44,14 @@ You can find examples in the `examples` folder.
 use anyhow::{Context, Result};
 use dotenv::dotenv;
 
-use chatgpt_functions::chat_gpt::ChatGPT;
+use chatgpt_functions::chat_gpt::ChatGPTBuilder;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
     let key = std::env::var("OPENAI_API_KEY")?;
 
-    let mut gpt = ChatGPT::new(key, None, None)?;
+    let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
 
     println!("Initialised chatbot. Enter your message to start a conversation.");
     println!("Using:");
@@ -82,7 +82,7 @@ async fn main() -> Result<()> {
 ```rust
 use anyhow::{Context, Result};
 use chatgpt_functions::{
-    chat_gpt::ChatGPT,
+    chat_gpt::ChatGPTBuilder,
     function_specification::{FunctionSpecification},
 };
 use dotenv::dotenv;
@@ -92,7 +92,7 @@ async fn main() -> Result<()> {
     dotenv().ok();
     let key = std::env::var("OPENAI_API_KEY")?;
 
-    let mut gpt = ChatGPT::new(key, None, None)?;
+    let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
 
     let json = r#"
         {

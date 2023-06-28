@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use chatgpt_functions::{chat_gpt::ChatGPT, function_specification::FunctionSpecification};
+use chatgpt_functions::{chat_gpt::ChatGPTBuilder, function_specification::FunctionSpecification};
 use dotenv::dotenv;
 
 #[tokio::main]
@@ -7,7 +7,7 @@ async fn main() -> Result<()> {
     dotenv().ok();
     let key = std::env::var("OPENAI_API_KEY")?;
 
-    let mut gpt = ChatGPT::new(key, None, None, None)?;
+    let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
 
     let json = r#"
         {

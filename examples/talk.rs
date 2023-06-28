@@ -1,14 +1,14 @@
 use anyhow::{Context, Result};
 use dotenv::dotenv;
 
-use chatgpt_functions::chat_gpt::ChatGPT;
+use chatgpt_functions::chat_gpt::ChatGPTBuilder;
 
 #[tokio::main]
 async fn main() -> Result<()> {
     dotenv().ok();
     let key = std::env::var("OPENAI_API_KEY")?;
 
-    let mut gpt = ChatGPT::new(key, None, None, None)?;
+    let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
 
     println!("Initialised chatbot. Enter your message to start a conversation.");
     println!("Using:");
@@ -28,30 +28,7 @@ async fn main() -> Result<()> {
         // println!("Request: {}", chat_context);
         let answer = gpt.completion_managed(input).await?;
         // println!("Full answer: {}", answer.to_string());
-        print_answer(&answer);
+        println!("{}", answer.content().unwrap());
         println!("--------------------------------------");
-    }
-}
-
-fn print_answer(answer: &chatgpt_functions::chat_response::ChatResponse) {
-    for choice in &answer.choices {
-        match choice.message.content {
-            Some(ref content) => {
-                println!("Answer: {}", content);
-            }
-            None => (),
-        };
-        match choice.message.name {
-            Some(ref name) => {
-                println!("Name: {}", name);
-            }
-            None => (),
-        };
-        match choice.message.function_call {
-            Some(ref function_call) => {
-                println!("Function call: {}", function_call);
-            }
-            None => (),
-        };
     }
 }

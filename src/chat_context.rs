@@ -13,6 +13,8 @@ pub struct ChatContext {
 }
 
 impl ChatContext {
+    /// Creates a new ChatContext with a model name
+    /// as a string. This is an internal function used by other functions.
     pub fn new(model: String) -> ChatContext {
         ChatContext {
             model,
@@ -22,24 +24,72 @@ impl ChatContext {
         }
     }
 
+    /// Pushes a message in the chat context
+    /// as a Message. This is an internal function used by other functions.
+    /// It is recommended to use ChatGPT.push_message()
     pub fn push_message(&mut self, message: Message) {
         self.messages.push(message);
     }
 
+    /// Sets the messages in the chat context
+    /// as a vector of Message.
+    /// This is an internal function used by other functions.
     pub fn set_messages(&mut self, messages: Vec<Message>) {
         self.messages = messages;
     }
 
+    /// Pushes a function in the chat context
+    /// as a FunctionSpecification.
+    /// This is an internal function used by other functions.
+    /// It is recommended to use ChatGPT.push_function()
     pub fn push_function(&mut self, functions: FunctionSpecification) {
         self.functions.push(functions);
     }
 
+    /// Sets the functions in the chat context
+    /// as a vector of FunctionSpecification.
+    /// This is an internal function used by other functions.
     pub fn set_functions(&mut self, functions: Vec<FunctionSpecification>) {
         self.functions = functions;
     }
 
+    /// Sets the last message sent by the user or the bot
+    /// as a string. This is an internal function used by other functions.
     pub fn set_function_call(&mut self, function_call: String) {
         self.function_call = Some(function_call);
+    }
+
+    /// Returns the last message sent by the user or the bot
+    /// as a string. This is an internal function used by other functions.
+    /// It is recommended to use ChatGPT.last_content()
+    pub fn last_content(&self) -> Option<String> {
+        match self.messages.last() {
+            Some(message) => {
+                if let Some(c) = message.content.clone() {
+                    Some(c)
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
+
+    /// Returns the last function call in the chat context
+    /// as a tuple of the function name and the arguments.
+    /// This is an internal function used by other functions.
+    /// It is recommended to use ChatGPT.last_function_call()
+    pub fn last_function_call(&self) -> Option<(String, String)> {
+        match self.messages.last() {
+            Some(message) => {
+                if let Some(f) = message.function_call.clone() {
+                    Some((f.name, f.arguments))
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
     }
 }
 
@@ -141,6 +191,65 @@ mod tests {
         assert_eq!(
             chat_context.to_string(),
             "{\"model\":\"test_model\",\"messages\":[{\"role\":\"test\",\"content\":\"hi\",\"name\":\"test_function\"}],\"functions\":[{\"name\":\"test_function\",\"description\":\"a dummy function to test the chat context\",\"parameters\":{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\",\"description\":\"a dummy string\"}},\"required\":[\"location\"]}}]}"
+        );
+    }
+
+    #[test]
+    fn test_last_content() {
+        let mut chat_context = ChatContext::new("model".to_string());
+
+        // Test with no messages
+        assert_eq!(chat_context.last_content(), None);
+
+        // Test with a message with no content
+        chat_context.push_message(Message {
+            role: "role".to_string(),
+            content: None,
+            name: None,
+            function_call: None,
+        });
+        assert_eq!(chat_context.last_content(), None);
+
+        // Test with a message with content
+        chat_context.push_message(Message {
+            role: "role".to_string(),
+            content: Some("content".to_string()),
+            name: None,
+            function_call: None,
+        });
+        assert_eq!(chat_context.last_content(), Some("content".to_string()));
+    }
+
+    #[test]
+    fn test_last_function_call() {
+        let mut chat_context = ChatContext::new("model".to_string());
+
+        // Test with no messages
+        assert_eq!(chat_context.last_content(), None);
+
+        // Test with a message with no function call
+        chat_context.push_message(Message {
+            role: "role".to_string(),
+            content: None,
+            name: None,
+            function_call: None,
+        });
+        assert_eq!(chat_context.last_content(), None);
+
+        // Test with a message with function call
+        use crate::message::FunctionCall;
+        chat_context.push_message(Message {
+            role: "role".to_string(),
+            content: None,
+            name: None,
+            function_call: Some(FunctionCall {
+                name: "function".to_string(),
+                arguments: "arguments".to_string(),
+            }),
+        });
+        assert_eq!(
+            chat_context.last_function_call(),
+            Some(("function".to_string(), "arguments".to_string()))
         );
     }
 }

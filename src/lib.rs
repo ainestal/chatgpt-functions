@@ -7,6 +7,21 @@
 //! The main module to use for the chatbot is `chat_gpt`.
 //! It provides a `ChatGPT` struct that can be used to interact with the GPT API.
 //!
+//! ## Example
+//! ```no_run
+//! use anyhow::Result;
+//! use dotenv::dotenv;
+//! use chatgpt_functions::chat_gpt::ChatGPTBuilder;
+//!
+//! #[tokio::main]
+//! async fn main() -> Result<()> {
+//!     dotenv().ok();
+//!     let key = std::env::var("OPENAI_API_KEY")?;
+//!     let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
+//!     let answer = gpt.completion_managed("Hello, how are you?".to_string()).await?;
+//!     println!("{}", answer);
+//!     Ok(())
+//! }
 
 // The main module to use, most of the use cases will only need this
 pub mod chat_gpt;
