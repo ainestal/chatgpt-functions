@@ -253,6 +253,34 @@ impl ChatGPT {
     pub fn set_functions(&mut self, functions: Vec<FunctionSpecification>) {
         self.chat_context.set_functions(functions);
     }
+
+    /// This function is used to retrieve the content of the last message in the context
+    pub fn last_content(&self) -> Option<String> {
+        match self.chat_context.messages.last() {
+            Some(message) => {
+                if let Some(c) = message.clone().content {
+                    return Some(c);
+                } else {
+                    return None;
+                }
+            }
+            None => return None,
+        }
+    }
+
+    /// This function is used to retrieve the function_call of the last message in the context
+    pub fn last_function(&self) -> Option<(String, String)> {
+        match self.chat_context.messages.last() {
+            Some(message) => {
+                if let Some(f) = message.clone().function_call {
+                    Some((f.name, f.arguments))
+                } else {
+                    None
+                }
+            }
+            None => None,
+        }
+    }
 }
 
 fn parse_removing_newlines(response: String) -> Result<ChatResponse> {
@@ -265,7 +293,7 @@ fn parse_removing_newlines(response: String) -> Result<ChatResponse> {
 mod tests {
     use std::collections::HashMap;
 
-    use crate::function_specification::Parameters;
+    use crate::{function_specification::Parameters, message::FunctionCall};
 
     use super::*;
 
@@ -416,6 +444,51 @@ mod tests {
                 name: "completion_managed".to_string(),
                 arguments: "{    \"content\": \"Hi, model!\"}".to_string(),
             })
+        );
+    }
+
+    #[test]
+    fn test_last_content() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let message = Message::new_user_message("content".to_string());
+        chat_gpt.push_message(message);
+        let message = Message::new_user_message("content2".to_string());
+        chat_gpt.push_message(message);
+        let message = Message::new_user_message("content3".to_string());
+        chat_gpt.push_message(message);
+        assert_eq!(chat_gpt.last_content(), Some("content3".to_string()));
+    }
+
+    #[test]
+    fn test_last_content_empty() {
+        let chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        assert_eq!(chat_gpt.last_content(), None);
+    }
+
+    #[test]
+    fn test_last_function() {
+        let mut chat_gpt = ChatGPT::new("key".to_string(), None, None, None).unwrap();
+        let mut msg = Message::new("function".to_string());
+        msg.set_function_call(FunctionCall {
+            name: "function".to_string(),
+            arguments: "1".to_string(),
+        });
+        chat_gpt.push_message(msg);
+        let mut msg = Message::new("function2".to_string());
+        msg.set_function_call(FunctionCall {
+            name: "function2".to_string(),
+            arguments: "2".to_string(),
+        });
+        chat_gpt.push_message(msg);
+        let mut msg = Message::new("function3".to_string());
+        msg.set_function_call(FunctionCall {
+            name: "function3".to_string(),
+            arguments: "3".to_string(),
+        });
+        chat_gpt.push_message(msg);
+        assert_eq!(
+            chat_gpt.last_function(),
+            Some(("function3".to_string(), "3".to_string()))
         );
     }
 
