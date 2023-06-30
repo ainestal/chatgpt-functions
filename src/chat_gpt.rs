@@ -104,7 +104,7 @@ impl ChatGPT {
     ///
     /// #[tokio::main]
     /// async fn main() -> Result<()> {
-    ///     let key = std::env::var("OPENAI_API_KEY")?;
+    ///     let key = std::env::var("OPENAI_API_KEY").unwrap_or("test".to_string());
     ///     let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
     ///     Ok(())
     /// }
