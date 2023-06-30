@@ -22,7 +22,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-chatgpt-functions = "0.3"
+chatgpt-functions = "0.3.1"
 ```
 
 # Documentation
@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
         input.pop(); // Remove the trailing newline
 
         println!("- AI:");
-        // println!("Request: {}", chat_context);
+        // println!("Request: {}", gpt.chat_context);
         let answer = gpt.completion_managed(input).await?;
         // println!("Full answer: {}", answer.to_string());
         println!("{}", answer.choices[0].message);
@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
         input.pop(); // Remove the trailing newline
 
         println!("- AI:");
-        // println!("Request: {}", chat_context);
+        // println!("Request: {}", gpt.chat_context);
         let answer = gpt.completion_managed(input).await?;
         println!("Full answer: {}", answer.to_string());
         println!("--------------------------------------");

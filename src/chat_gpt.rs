@@ -269,7 +269,9 @@ impl ChatGPT {
     ) -> Result<ChatResponse> {
         self.push_message(message);
         let response = self.completion().await?;
-        self.push_message(response.choices[0].message.clone());
+        if let Some(choice) = response.choices.last() {
+            self.push_message(choice.message.clone());
+        };
         Ok(response)
     }
 
@@ -345,7 +347,7 @@ mod tests {
         let chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("123".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         assert_eq!(chat_gpt.session_id.len(), 36);
         assert_eq!(chat_gpt.chat_context.model, DEFAULT_MODEL);
         assert_eq!(chat_gpt.model, DEFAULT_MODEL);
@@ -358,7 +360,7 @@ mod tests {
             .model("model".to_string())
             .openai_api_token("1234".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         assert_eq!(chat_gpt.session_id, "session_id");
         assert_eq!(chat_gpt.openai_api_token, "1234");
         assert_eq!(chat_gpt.chat_context.model, "model");
@@ -369,7 +371,7 @@ mod tests {
         let mut chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         let message = Message::new_user_message("content".to_string());
         chat_gpt.push_message(message);
         assert_eq!(chat_gpt.chat_context.messages.len(), 1);
@@ -380,7 +382,7 @@ mod tests {
         let mut chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         let message = Message::new_user_message("content".to_string());
         chat_gpt.set_messages(vec![message]);
         assert_eq!(chat_gpt.chat_context.messages.len(), 1);
@@ -391,7 +393,7 @@ mod tests {
         let mut chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         let function = FunctionSpecification::new("function".to_string(), None, None);
         chat_gpt.push_function(function);
         assert_eq!(chat_gpt.chat_context.functions.len(), 1);
@@ -402,7 +404,7 @@ mod tests {
         let mut chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         let function = FunctionSpecification::new(
             "function".to_string(),
             Some("Test function".to_string()),
@@ -415,10 +417,27 @@ mod tests {
         chat_gpt.set_functions(vec![function]);
         assert_eq!(chat_gpt.chat_context.functions.len(), 1);
 
-        let function = chat_gpt.chat_context.functions.get(0).unwrap();
+        let function = chat_gpt
+            .chat_context
+            .functions
+            .get(0)
+            .expect("Failed to get the function");
         assert_eq!(function.name, "function");
-        assert_eq!(function.description.as_ref().unwrap(), "Test function");
-        assert_eq!(function.parameters.as_ref().unwrap().type_, "string");
+        assert_eq!(
+            function
+                .description
+                .as_ref()
+                .expect("Failed to get the description"),
+            "Test function"
+        );
+        assert_eq!(
+            function
+                .parameters
+                .as_ref()
+                .expect("Failed to get the parameters")
+                .type_,
+            "string"
+        );
     }
 
     #[test]
@@ -451,8 +470,13 @@ mod tests {
     }
 }"#
         .to_string();
-        let response = parse_removing_newlines(r).unwrap();
-        let message = response.choices.get(0).unwrap().message.clone();
+        let response = parse_removing_newlines(r).expect("Failed to parse");
+        let message = response
+            .choices
+            .first()
+            .expect("There is no choice")
+            .message
+            .clone();
 
         assert_eq!(message.role, "assistant");
         assert_eq!(message.content, None);
@@ -473,8 +497,13 @@ mod tests {
         let r = r#"{"id":"chatcmpl-7VneSVRn9qJ1crw3m0V0kmnCq8Pnn","object":"chat.completion","created":1687813384,"choices":[{"index":0,"message":{"role":"assistant","function_call":{"name":"completion_managed","arguments":"{
     \"content\": \"Hi, model!\"
 }"}},"finish_reason":"function_call"}],"usage":{"prompt_tokens":61,"completion_tokens":18,"total_tokens":79}}"#.to_string();
-        let response = parse_removing_newlines(r).unwrap();
-        let message = response.choices.get(0).unwrap().message.clone();
+        let response = parse_removing_newlines(r).expect("Failed to parse");
+        let message = response
+            .choices
+            .last()
+            .expect("There is no choice")
+            .message
+            .clone();
 
         assert_eq!(message.role, "assistant");
         assert_eq!(message.content, None);
@@ -493,7 +522,7 @@ mod tests {
         let mut chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         let message = Message::new_user_message("content".to_string());
         chat_gpt.push_message(message);
         let message = Message::new_user_message("content2".to_string());
@@ -508,7 +537,7 @@ mod tests {
         let chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         assert_eq!(chat_gpt.last_content(), None);
     }
 
@@ -517,7 +546,7 @@ mod tests {
         let mut chat_gpt = ChatGPTBuilder::new()
             .openai_api_token("key".to_string())
             .build()
-            .unwrap();
+            .expect("Failed to create ChatGPT");
         let mut msg = Message::new("function".to_string());
         msg.set_function_call(FunctionCall {
             name: "function".to_string(),
@@ -541,14 +570,4 @@ mod tests {
             Some(("function3".to_string(), "3".to_string()))
         );
     }
-
-    // Skip this test because (for now) it requires an API key and a real connection to the API
-    // #[tokio::test]
-    // async fn test_chat_gpt_completion() {
-    //     let mut chat_gpt = ChatGPT::new("key".to_string(), None, None).unwrap();
-    //     let message = Message::new_user_message("content".to_string());
-    //     chat_gpt.push_message(message);
-    //     let response = chat_gpt.completion().await.unwrap();
-    //     assert_eq!(response.choices.len(), 1);
-    // }
 }

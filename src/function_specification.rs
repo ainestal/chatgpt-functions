@@ -163,7 +163,7 @@ mod tests {
             function_specification.description,
             Some("Get the current weather in a given location".to_string())
         );
-        let params = function_specification.parameters.unwrap();
+        let params = function_specification.parameters.expect("No parameters");
         assert_eq!(params.type_, "object");
         assert_eq!(params.properties.len(), 2);
         assert_eq!(params.required.len(), 1);

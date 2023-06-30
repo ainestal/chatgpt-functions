@@ -25,10 +25,10 @@ async fn main() -> Result<()> {
         input.pop(); // Remove the trailing newline
 
         println!("- AI:");
-        // println!("Request: {}", chat_context);
+        // println!("Request: {}", gpt.chat_context);
         let answer = gpt.completion_managed(input).await?;
         // println!("Full answer: {}", answer.to_string());
-        println!("{}", answer.content().unwrap());
+        println!("{}", answer.content().expect("Failed to get the content"));
         println!("--------------------------------------");
     }
 }

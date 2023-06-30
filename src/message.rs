@@ -91,7 +91,11 @@ impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{\"role\":\"{}\"", self.role)?;
         if let Some(content) = &self.content {
-            write!(f, ",\"content\":\"{}\"", content)?;
+            write!(
+                f,
+                ",\"content\":\"{}\"",
+                content.replace("\"", "\\\"").replace("\n", " ")
+            )?;
         } else {
             write!(f, ",\"content\":\"\"")?;
         }
@@ -131,16 +135,18 @@ mod tests {
             "{\"role\":\"role\",\"content\":\"\"}".to_string()
         );
 
-        message.set_content("content".to_string());
+        message
+            .set_content("content with \"quotes\" and a \nnewline that shouldn't show".to_string());
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content\"}".to_string()
+            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a  newline that shouldn't show\"}".to_string()
         );
 
         message.set_name("name".to_string());
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\"}".to_string()
+            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a  newline that shouldn't show\",\"name\":\"name\"}"
+                .to_string()
         );
 
         let function_call = FunctionCall {
@@ -150,7 +156,7 @@ mod tests {
         message.set_function_call(function_call);
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}}".to_string()
+            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a  newline that shouldn't show\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}}".to_string()
         );
     }
 
