@@ -68,10 +68,8 @@ async fn main() -> Result<()> {
         input.pop(); // Remove the trailing newline
 
         println!("- AI:");
-        // println!("Request: {}", gpt.chat_context);
         let answer = gpt.completion_managed(input).await?;
-        // println!("Full answer: {}", answer.to_string());
-        println!("{}", answer.choices[0].message);
+        println!("{}", answer.content().expect("Failed to get the content"));
         println!("--------------------------------------");
     }
 }
@@ -134,9 +132,8 @@ async fn main() -> Result<()> {
         input.pop(); // Remove the trailing newline
 
         println!("- AI:");
-        // println!("Request: {}", gpt.chat_context);
         let answer = gpt.completion_managed(input).await?;
-        println!("Full answer: {}", answer.to_string());
+        println!("{}", answer.content().expect("Failed to get the content"));
         println!("--------------------------------------");
     }
 }
