@@ -52,6 +52,15 @@ impl ChatResponse {
             None => None,
         }
     }
+
+    /// Returns the message of the first choice
+    /// This is the message that the bot will send
+    pub fn message(&self) -> Option<Message> {
+        match self.choices.first() {
+            Some(choice) => Some(choice.message.clone()),
+            None => None,
+        }
+    }
 }
 
 impl fmt::Display for Choice {
@@ -154,6 +163,45 @@ mod tests {
         assert_eq!(
             chat_response.function_call(),
             Some(("name".to_string(), "{\"example\":\"this\"}".to_string()))
+        );
+    }
+
+    #[test]
+    fn test_message() {
+        let chat_response = ChatResponse {
+            id: "id".to_string(),
+            object: "object".to_string(),
+            created: 0,
+            choices: vec![Choice {
+                index: 0,
+                message: Message {
+                    role: "role".to_string(),
+                    content: Some("content".to_string()),
+                    name: Some("name".to_string()),
+                    function_call: Some(FunctionCall {
+                        name: "name".to_string(),
+                        arguments: "{\"example\":\"this\"}".to_string(),
+                    }),
+                },
+                finish_reason: "finish_reason".to_string(),
+            }],
+            usage: Usage {
+                prompt_tokens: 0,
+                completion_tokens: 0,
+                total_tokens: 0,
+            },
+        };
+        assert_eq!(
+            chat_response.message(),
+            Some(Message {
+                role: "role".to_string(),
+                content: Some("content".to_string()),
+                name: Some("name".to_string()),
+                function_call: Some(FunctionCall {
+                    name: "name".to_string(),
+                    arguments: "{\"example\":\"this\"}".to_string(),
+                }),
+            })
         );
     }
 
