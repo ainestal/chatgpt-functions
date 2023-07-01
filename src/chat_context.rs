@@ -130,24 +130,24 @@ mod tests {
     use super::*;
     use crate::{
         function_specification::{Parameters, Property},
-        message::Message,
+        message::MessageBuilder,
     };
 
     #[test]
     fn test_display_for_chat_context() {
         let mut chat_context = ChatContext::new("test_model".to_string());
-        chat_context.push_message(Message {
-            role: "role".to_string(),
-            content: Some("Hello".to_string()),
-            name: None,
-            function_call: None,
-        });
-        chat_context.push_message(Message {
-            role: "bot".to_string(),
-            content: Some("Hi".to_string()),
-            name: None,
-            function_call: None,
-        });
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .content("Hello".to_string())
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
+        let message = MessageBuilder::new()
+            .role("bot".to_string())
+            .content("Hi".to_string())
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
         assert_eq!(
             chat_context.to_string(),
             "{\"model\":\"test_model\",\"messages\":[{\"role\":\"role\",\"content\":\"Hello\"},{\"role\":\"bot\",\"content\":\"Hi\"}]}"
@@ -180,12 +180,13 @@ mod tests {
         chat_context.push_function(function);
 
         // Add a message to the chat context
-        chat_context.push_message(Message {
-            role: "test".to_string(),
-            content: Some("hi".to_string()),
-            name: Some("test_function".to_string()),
-            function_call: None, // Lets assume a function has not been called yet
-        });
+        let message = MessageBuilder::new()
+            .role("test".to_string())
+            .content("hi".to_string())
+            .name("test_function".to_string())
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
 
         // Print the chat context, with the model, the messages, the functions, and the function_call
         assert_eq!(
@@ -202,21 +203,21 @@ mod tests {
         assert_eq!(chat_context.last_content(), None);
 
         // Test with a message with no content
-        chat_context.push_message(Message {
-            role: "role".to_string(),
-            content: None,
-            name: None,
-            function_call: None,
-        });
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .name("name".to_string())
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
         assert_eq!(chat_context.last_content(), None);
 
         // Test with a message with content
-        chat_context.push_message(Message {
-            role: "role".to_string(),
-            content: Some("content".to_string()),
-            name: None,
-            function_call: None,
-        });
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .content("content".to_string())
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
         assert_eq!(chat_context.last_content(), Some("content".to_string()));
     }
 
@@ -228,25 +229,25 @@ mod tests {
         assert_eq!(chat_context.last_content(), None);
 
         // Test with a message with no function call
-        chat_context.push_message(Message {
-            role: "role".to_string(),
-            content: None,
-            name: None,
-            function_call: None,
-        });
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .name("name".to_string())
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
         assert_eq!(chat_context.last_content(), None);
 
         // Test with a message with function call
         use crate::message::FunctionCall;
-        chat_context.push_message(Message {
-            role: "role".to_string(),
-            content: None,
-            name: None,
-            function_call: Some(FunctionCall {
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .function_call(FunctionCall {
                 name: "function".to_string(),
                 arguments: "arguments".to_string(),
-            }),
-        });
+            })
+            .build()
+            .expect("Failed to build message");
+        chat_context.push_message(message);
         assert_eq!(
             chat_context.last_function_call(),
             Some(("function".to_string(), "arguments".to_string()))

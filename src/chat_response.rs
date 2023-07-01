@@ -105,25 +105,21 @@ impl fmt::Display for Usage {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::message::FunctionCall;
+    use crate::message::{FunctionCall, MessageBuilder};
 
     #[test]
     fn test_last_content() {
+        let message = MessageBuilder::new()
+            .content("content".to_string())
+            .build()
+            .unwrap();
         let chat_response = ChatResponse {
             id: "id".to_string(),
             object: "object".to_string(),
             created: 0,
             choices: vec![Choice {
                 index: 0,
-                message: Message {
-                    role: "role".to_string(),
-                    content: Some("content".to_string()),
-                    name: Some("name".to_string()),
-                    function_call: Some(FunctionCall {
-                        name: "name".to_string(),
-                        arguments: "{\"example\":\"this\"}".to_string(),
-                    }),
-                },
+                message: message.clone(),
                 finish_reason: "finish_reason".to_string(),
             }],
             usage: Usage {
@@ -137,21 +133,24 @@ mod tests {
 
     #[test]
     fn test_last_function_call() {
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .content("content".to_string())
+            .name("name".to_string())
+            .function_call(FunctionCall {
+                name: "name".to_string(),
+                arguments: "{\"example\":\"this\"}".to_string(),
+            })
+            .build()
+            .expect("Failed to build message");
+
         let chat_response = ChatResponse {
             id: "id".to_string(),
             object: "object".to_string(),
             created: 0,
             choices: vec![Choice {
                 index: 0,
-                message: Message {
-                    role: "role".to_string(),
-                    content: Some("content".to_string()),
-                    name: Some("name".to_string()),
-                    function_call: Some(FunctionCall {
-                        name: "name".to_string(),
-                        arguments: "{\"example\":\"this\"}".to_string(),
-                    }),
-                },
+                message: message.clone(),
                 finish_reason: "finish_reason".to_string(),
             }],
             usage: Usage {
@@ -168,21 +167,24 @@ mod tests {
 
     #[test]
     fn test_message() {
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .content("content".to_string())
+            .name("name".to_string())
+            .function_call(FunctionCall {
+                name: "name".to_string(),
+                arguments: "{\"example\":\"this\"}".to_string(),
+            })
+            .build()
+            .expect("Failed to build message");
+
         let chat_response = ChatResponse {
             id: "id".to_string(),
             object: "object".to_string(),
             created: 0,
             choices: vec![Choice {
                 index: 0,
-                message: Message {
-                    role: "role".to_string(),
-                    content: Some("content".to_string()),
-                    name: Some("name".to_string()),
-                    function_call: Some(FunctionCall {
-                        name: "name".to_string(),
-                        arguments: "{\"example\":\"this\"}".to_string(),
-                    }),
-                },
+                message: message.clone(),
                 finish_reason: "finish_reason".to_string(),
             }],
             usage: Usage {
@@ -191,33 +193,24 @@ mod tests {
                 total_tokens: 0,
             },
         };
-        assert_eq!(
-            chat_response.message(),
-            Some(Message {
-                role: "role".to_string(),
-                content: Some("content".to_string()),
-                name: Some("name".to_string()),
-                function_call: Some(FunctionCall {
-                    name: "name".to_string(),
-                    arguments: "{\"example\":\"this\"}".to_string(),
-                }),
-            })
-        );
+        assert_eq!(chat_response.message(), Some(message),);
     }
 
     #[test]
     fn test_display_for_choice() {
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .content("content".to_string())
+            .name("name".to_string())
+            .function_call(FunctionCall {
+                name: "name".to_string(),
+                arguments: "{\"example\":\"this\"}".to_string(),
+            })
+            .build()
+            .expect("Failed to build message");
         let choice = Choice {
             index: 0,
-            message: Message {
-                role: "role".to_string(),
-                content: Some("content".to_string()),
-                name: Some("name".to_string()),
-                function_call: Some(FunctionCall {
-                    name: "name".to_string(),
-                    arguments: "{\"example\":\"this\"}".to_string(),
-                }),
-            },
+            message: message.clone(),
             finish_reason: "finish_reason".to_string(),
         };
         assert_eq!(
@@ -228,21 +221,23 @@ mod tests {
 
     #[test]
     fn test_display_chat_response() {
+        let message = MessageBuilder::new()
+            .role("role".to_string())
+            .content("content".to_string())
+            .name("name".to_string())
+            .function_call(FunctionCall {
+                name: "name".to_string(),
+                arguments: "{\"example\":\"this\"}".to_string(),
+            })
+            .build()
+            .expect("Failed to build message");
         let chat_response = ChatResponse {
             id: "id".to_string(),
             object: "object".to_string(),
             created: 0,
             choices: vec![Choice {
                 index: 0,
-                message: Message {
-                    role: "role".to_string(),
-                    content: Some("content".to_string()),
-                    name: Some("name".to_string()),
-                    function_call: Some(FunctionCall {
-                        name: "name".to_string(),
-                        arguments: "{\"example\":\"this\"}".to_string(),
-                    }),
-                },
+                message: message.clone(),
                 finish_reason: "finish_reason".to_string(),
             }],
             usage: Usage {
