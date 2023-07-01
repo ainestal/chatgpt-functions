@@ -2,6 +2,8 @@ use std::fmt;
 
 use serde::{Deserialize, Serialize};
 
+use crate::escape_json::EscapeJson;
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Message {
     pub role: String,
@@ -91,11 +93,7 @@ impl fmt::Display for Message {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{\"role\":\"{}\"", self.role)?;
         if let Some(content) = &self.content {
-            write!(
-                f,
-                ",\"content\":\"{}\"",
-                content.replace("\"", "\\\"").replace("\n", " ")
-            )?;
+            write!(f, ",\"content\":\"{}\"", content.escape_json())?;
         } else {
             write!(f, ",\"content\":\"\"")?;
         }
@@ -118,7 +116,7 @@ impl fmt::Display for FunctionCall {
             f,
             "{{\"name\":\"{}\",\"arguments\":\"{}\"}}",
             self.name,
-            self.arguments.replace("\"", "\\\"").replace("\n", "")
+            self.arguments.escape_json()
         )
     }
 }
@@ -135,17 +133,20 @@ mod tests {
             "{\"role\":\"role\",\"content\":\"\"}".to_string()
         );
 
-        message
-            .set_content("content with \"quotes\" and a \nnewline that shouldn't show".to_string());
+        message.set_content(
+            "content with \"quotes\" and a \nnewline, and other stuff like \\ \"\n\r\t\x08\x0C\""
+                .to_string(),
+        );
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a  newline that shouldn't show\"}".to_string()
+            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a \\nnewline, and other stuff like \\\\ \\\"\\n\\r\\t\\b\\f\\\"\"}"
+                .to_string()
         );
 
         message.set_name("name".to_string());
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a  newline that shouldn't show\",\"name\":\"name\"}"
+            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a \\nnewline, and other stuff like \\\\ \\\"\\n\\r\\t\\b\\f\\\"\",\"name\":\"name\"}"
                 .to_string()
         );
 
@@ -156,7 +157,7 @@ mod tests {
         message.set_function_call(function_call);
         assert_eq!(
             message.to_string(),
-            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a  newline that shouldn't show\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}}".to_string()
+            "{\"role\":\"role\",\"content\":\"content with \\\"quotes\\\" and a \\nnewline, and other stuff like \\\\ \\\"\\n\\r\\t\\b\\f\\\"\",\"name\":\"name\",\"function_call\":{\"name\":\"name\",\"arguments\":\"{\\\"example\\\":\\\"this\\\"}\"}}".to_string()
         );
     }
 
@@ -218,7 +219,7 @@ mod tests {
         // https://platform.openai.com/docs/api-reference/chat/create
         assert_eq!(
             message_parsed.to_string(),
-            "{\"role\":\"assistant\",\"content\":\"\",\"function_call\":{\"name\":\"completion_managed\",\"arguments\":\"{  \\\"content\\\": \\\"Hi model, how are you today?\\\"}\"}}".to_string()
+            "{\"role\":\"assistant\",\"content\":\"\",\"function_call\":{\"name\":\"completion_managed\",\"arguments\":\"{\\n  \\\"content\\\": \\\"Hi model, how are you today?\\\"\\n}\"}}".to_string()
         );
 
         // When we don't use our custom Display trait, the newlines are kept
