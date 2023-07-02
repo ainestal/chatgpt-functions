@@ -330,7 +330,10 @@ impl ChatGPT {
 
 fn parse_removing_newlines(response: String) -> Result<ChatResponse> {
     let r = response.replace("\n", "");
-    let response: ChatResponse = serde_json::from_str(&r)?;
+    let response: ChatResponse = serde_json::from_str(&r).context(format!(
+        "Could not parse the response. The object to parse: \n{}",
+        r
+    ))?;
     Ok(response)
 }
 
