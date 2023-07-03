@@ -31,7 +31,17 @@ async fn main() -> Result<()> {
         "#;
     let function: FunctionSpecification =
         serde_json::from_str(json).expect("Could not parse correctly the function specification");
+    gpt.push_function(function);
 
+    let json = r#"
+    {
+        "name": "get_current_weather_no_params",
+        "description": "Get the current weather in a given location"
+        }
+    }
+    "#;
+    let function: FunctionSpecification =
+        serde_json::from_str(json).expect("Could not parse correctly the function specification");
     gpt.push_function(function);
 
     println!("Initialised chatbot. Enter your message to start a conversation.");

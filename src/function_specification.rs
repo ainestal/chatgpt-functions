@@ -2,6 +2,50 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt;
 
+/// The documentation for a function
+///
+/// # Caveats
+/// The documentation, in July 2023 is not accurate
+/// https://platform.openai.com/docs/api-reference/chat/create#chat/create-parameters
+///
+/// It states that the parameters are optional, but they are not:
+///
+/// curl https://api.openai.com/v1/chat/completions   -H "Content-Type: application/json"   -H "Authorization: Bearer $OPENAI_API_KEY"   -d '{
+///     "model": "gpt-3.5-turbo-0613",
+///     "messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the weather like in Madrid, Spain?"}],
+///     "functions": [{
+///         "name": "get_current_weather",
+///         "description": "Get the current weather in a given location"
+///     }],
+///     "function_call": "auto"
+/// }'
+/// {
+///   "error": {
+///     "message": "'parameters' is a required property - 'functions.0'",
+///     "type": "invalid_request_error",
+///     "param": null,
+///     "code": null
+///   }
+/// }
+///
+/// The library works around it by actually having the parameters as optional in the struct,
+/// so the configuration can be parsed correctly, but then printing the object with the parameters
+/// and the minimum required fields so the API doesn't complain. This would be by adding the
+/// parameteres, with type and empty properties. Like this:
+///
+/// curl https://api.openai.com/v1/chat/completions   -H "Content-Type: application/json"   -H "Authorization: Bearer $OPENAI_API_KEY"   -d '{
+///     "model": "gpt-3.5-turbo-0613",
+///     "messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is the weather like in Madrid, Spain?"}],
+///     "functions": [{
+///         "name": "get_current_weather",
+///         "description": "Get the current weather in a given location",
+///         "parameters": {
+///             "type": "object",
+///             "properties": {}
+///         }
+///     }]
+/// }'
+///
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct FunctionSpecification {
     pub name: String,
@@ -56,6 +100,11 @@ impl fmt::Display for FunctionSpecification {
         }
         if let Some(parameters) = &self.parameters {
             write!(f, ",\"parameters\":{}", parameters)?;
+        } else {
+            write!(
+                f,
+                ",\"parameters\":{{\"type\":\"object\",\"properties\":{{}}}}"
+            )?;
         }
         write!(f, "}}")
     }
@@ -187,6 +236,19 @@ mod tests {
         assert_eq!(
             unit.enum_,
             Some(vec!["celsius".to_string(), "fahrenheit".to_string()])
+        );
+    }
+
+    #[test]
+    fn test_display_no_parameters() {
+        let function_specification = FunctionSpecification::new(
+            "get_current_weather".to_string(),
+            Some("Get the current weather in a given location".to_string()),
+            None,
+        );
+        assert_eq!(
+            function_specification.to_string(),
+            "{\"name\":\"get_current_weather\",\"description\":\"Get the current weather in a given location\",\"parameters\":{\"type\":\"object\",\"properties\":{}}}"
         );
     }
 
