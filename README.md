@@ -20,9 +20,10 @@ This is a work in progress. The API is not stable and will change.
 
 Add the following to your `Cargo.toml`:
 
-```toml
-[dependencies]
-chatgpt-functions = "0.3.1"
+```rust
+let mut gpt = ChatGPTBuilder::new().openai_api_token(key).build()?;
+let input = "Prompt for the bot".to_string();
+let answer = gpt.completion_managed(input).await?;
 ```
 
 # Documentation
